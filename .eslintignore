@@ -1,0 +1,8 @@
+node_modules
+coverage
+rollup.config.ts
+types
+dist
+tests
+/*.js
+/*.d.ts

@@ -55,6 +55,7 @@ Injects provider into the express request handler
 ```ts
 import Express from 'express'
 import { Middleware } from 'evm-express'
+
 const app = Express()
 const url = 'http://localhost:8545'
 app.use(Middleware(url))

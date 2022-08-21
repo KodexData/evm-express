@@ -1,4 +1,3 @@
-import './extensions'
 import type * as Types from './types'
 import WebSocket from 'ws'
 import { connect } from 'net'

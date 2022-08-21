@@ -1,8 +1,9 @@
 import type * as Types from './types'
 import * as utils from './utils'
 import create from './provider'
+import Middleware from './middleware'
 
-export { create }
+export { create, Middleware }
 
 /**
  * Creates a new EVM Node Request Handler.

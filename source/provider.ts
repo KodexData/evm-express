@@ -1,28 +1,33 @@
+import './extensions'
 import type * as Types from './types'
 import WebSocket from 'ws'
 import { connect } from 'net'
 import { request } from 'http'
 import { isIpc, isUrl, isWs } from './utils'
+import json from 'big-json'
 
 function ws_request<T>(url: string, payload: Types.Payload): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const socket = new WebSocket(url)
+    const parseStream = json.createParseStream()
 
-    socket.on('message', (data) => {
-      try {
-        const result: T = JSON.parse(data.toString())
-        resolve(result)
-        socket.close()
-      } catch (error) {
-        reject(error)
-        socket.close()
-      }
+    const quit = (): void => {
+      socket.close()
+      parseStream.end()
+    }
+
+    parseStream.on('data', (result: T) => {
+      resolve(result)
+      quit()
     })
 
-    socket.on('error', (error: Error) => {
-      error = Object.assign(error, { url, payload })
+    socket.on('message', (data: Buffer) => {
+      parseStream.end(data)
+    })
+
+    socket.on('error', (error) => {
       reject(error)
-      socket.close()
+      quit()
     })
 
     socket.on('open', () => {
@@ -33,31 +38,25 @@ function ws_request<T>(url: string, payload: Types.Payload): Promise<T> {
 
 function ipc_request<T>(path: string, payload: Types.Payload): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const chunks: Buffer[] = []
     const stream = connect(path)
+    const parseStream = json.createParseStream()
 
-    stream.on('data', (data) => {
-      chunks.push(data)
-    })
+    const quit = (): void => {
+      stream.destroy()
+    }
 
-    stream.on('end', () => {
-      try {
-        const body = Buffer.concat(chunks)
-        const result: T = JSON.parse(body.toString())
-        resolve(result)
-        stream.destroy()
-      } catch (error) {
-        reject(error)
-        stream.destroy()
-      }
+    parseStream.on('data', (result: T) => {
+      resolve(result)
+      quit()
     })
 
     stream.on('error', (error) => {
       error = Object.assign(error, { path, payload })
       reject(error)
-      stream.destroy()
+      quit()
     })
 
+    stream.pipe(parseStream)
     stream.write(JSON.stringify(payload))
     stream.end()
   })
@@ -65,9 +64,13 @@ function ipc_request<T>(path: string, payload: Types.Payload): Promise<T> {
 
 function http_request<T>(url: string, payload: Types.Payload): Promise<T> {
   return new Promise<T>((resolve, reject) => {
+    const parseStream = json.createParseStream()
     const { hostname, port, pathname } = new URL(url)
     const options = {
-      method: 'POST', hostname, port, path: pathname,
+      method: 'POST',
+      hostname,
+      port,
+      path: pathname,
       headers: { 'Content-Type': 'application/json' }
     }
     const req = request(options, function (res) {
@@ -79,7 +82,8 @@ function http_request<T>(url: string, payload: Types.Payload): Promise<T> {
 
       res.on('end', function () {
         const body = Buffer.concat(chunks)
-        resolve(JSON.parse(body.toString()))
+        parseStream.on('data', resolve)
+        parseStream.end(body)
       })
     })
 

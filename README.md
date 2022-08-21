@@ -48,6 +48,28 @@ const { result } = await request<string>({
 console.log(result)
 ```
 
+__REQUEST PROVIDER:__
+
+Injects provider into the express request handler
+
+```ts
+import Express from 'express'
+import { Middleware } from 'evm-express'
+const app = Express()
+const url = 'http://localhost:8545'
+app.use(Middleware(url))
+
+app.get('/blockNumber', function(req, res){
+  const { result } = await req.ethereum<string>({
+    jsonrpc: '2.0', id: 83, params:[],
+    method: 'eth_blockNumber'
+  })
+  res.send(result)
+})
+
+app.listen(3000)
+```
+
 __OPTIONS:__
 
 ```ts

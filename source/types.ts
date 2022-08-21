@@ -1,5 +1,13 @@
 import type { Request } from 'express'
 
+declare global {
+  namespace Express {
+    interface Request {
+      ethereum: RequestFn
+    }
+  }
+}
+
 export interface EvmExpressOptions {
   chainId?: number
   chainName?: string

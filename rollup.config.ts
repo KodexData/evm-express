@@ -34,13 +34,13 @@ export default [
     ]
   },
   {
-    input: './types/index.d.ts',
+    input: './index.d.ts',
     output: [{ file: packageJson.types, format: 'esm' }],
     plugins: [
       dts(),
       (() => ({
         name: 'clean-separate-types',
-        buildEnd: () => rimraf.sync(path.join(__dirname, './types'))
+        buildEnd: () => rimraf.sync(path.join(__dirname, '*.d.ts'))
       }))()
     ]
   }
